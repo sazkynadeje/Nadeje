@@ -649,7 +649,7 @@
 
     <div id="userBadge" class="user-badge" style="display:none;">
         <span>👤</span>
-        <span class="user-badge-name" id="userBadgeName"></span>
+        <a id="userBadgeName" class="user-badge-name" href="#" onclick="window.location.href='profil.html?jmeno='+encodeURIComponent(currentUser); return false;"></a>
         <button class="user-logout" onclick="doLogout()">odhlásit</button>
     </div>
 
