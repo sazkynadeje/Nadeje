@@ -85,6 +85,48 @@
         
         .bets-result-ok { color: var(--green); font-weight: bold; }
         .bets-result-fail { color: var(--red); }
+
+        /* --- SROLOVÁNÍ --- */
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 0 0 0;
+        }
+
+        .collapsible-header h2 { margin: 0; border: none; padding: 0; }
+
+        .collapse-arrow {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+            opacity: 0.5;
+        }
+
+        .collapse-arrow.open { transform: rotate(180deg); }
+
+        .collapsible-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.4s ease, padding 0.3s;
+        }
+
+        .collapsible-body.open { max-height: 9999px; padding-top: 20px; }
+
+        /* --- SPRÁVA UŽIVATELŮ --- */
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .user-name { font-weight: bold; font-size: 0.95em; }
     </style>
 </head>
 <body onload="initAdmin()">
@@ -99,52 +141,90 @@
     <h1 style="text-align: center;">⚙️ Administrace v4.9.4</h1>
 
     <div class="card" style="border: 2px dashed #e2e8f0;">
-        <h2>🧪 Testovací data</h2>
-        <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Vloží do Firebase 2 testovací zápasy s několika sázkami od různých hráčů. Deadliny jsou nastaveny dopředu i dozadu pro otestování obou stavů.</p>
-        <button class="btn btn-blue" onclick="insertTestData()">VLOŽIT TESTOVACÍ DATA</button>
-        <button class="btn btn-green" style="margin-top:10px;" onclick="autoEvalTestData()">🏆 AUTOMATICKY VYHODNOTIT</button>
-        <button class="btn btn-red" style="margin-top:10px; font-size:0.8em" onclick="clearTestData()">SMAZAT TESTOVACÍ DATA</button>
-        <div id="evalLog" style="margin-top:15px; font-size:0.82em; color:#4a5568; background:#f8fafc; border-radius:10px; padding:10px; display:none;"></div>
-    </div>
-
-    <div class="card">
-        <h2>💰 Správa banku</h2>
-        <label>Zůstatek z minulých kol (Kč):</label>
-        <input type="number" id="prevBankInput" placeholder="0">
-        <button class="btn btn-blue" onclick="saveBank()">Uložit bank</button>
-        
-        <label style="margin-top:20px;">Fond Naděje (Kč):</label>
-        <input type="number" id="fondNadjejeInput" placeholder="0">
-        <button class="btn btn-blue" onclick="saveFond()">Uložit Fond</button>
-        
-        <button class="btn btn-red" style="margin-top:20px; font-size:0.8em" onclick="clearStats()">VYNULOVAT ŽEBŘÍČKY (STATISTIKY)</button>
-    </div>
-
-    <div class="card">
-        <h2>🚀 Vypsat nový zápas</h2>
-        <div style="display:flex; gap:15px;">
-            <div style="flex:1;"><label>Domácí:</label><input list="statyList" id="d" placeholder="Domácí tým"></div>
-            <div style="flex:1;"><label>Hosté:</label><input list="statyList" id="h" placeholder="Hostující tým"></div>
+        <div class="collapsible-header" onclick="toggleSection('testData')">
+            <h2>🧪 Testovací data</h2>
+            <span class="collapse-arrow" id="arrow-testData">▼</span>
         </div>
-        <label>Uzávěrka (Deadline):</label>
-        <input type="datetime-local" id="dl">
-        <button id="pubBtn" class="btn btn-green" onclick="addM()">Uveřejnit na webu</button>
+        <div class="collapsible-body" id="body-testData">
+            <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Vloží do Firebase 2 testovací zápasy s několika sázkami od různých hráčů.</p>
+            <button class="btn btn-blue" onclick="insertTestData()">VLOŽIT TESTOVACÍ DATA</button>
+            <button class="btn btn-green" style="margin-top:10px;" onclick="autoEvalTestData()">🏆 AUTOMATICKY VYHODNOTIT</button>
+            <button class="btn btn-red" style="margin-top:10px; font-size:0.8em" onclick="clearTestData()">SMAZAT TESTOVACÍ DATA</button>
+            <div id="evalLog" style="margin-top:15px; font-size:0.82em; color:#4a5568; background:#f8fafc; border-radius:10px; padding:10px; display:none;"></div>
+        </div>
     </div>
 
     <div class="card">
-        <h2>📊 Aktivní zápasy</h2>
-        <div id="activeMatches">Načítám...</div>
-    </div>
-
-    <div class="history-section">
-        <h2>📜 Historie (Vyhodnoceno)</h2>
-        <div id="historyMatches">Zatím žádná historie.</div>
+        <div class="collapsible-header" onclick="toggleSection('bank')">
+            <h2>💰 Správa banku</h2>
+            <span class="collapse-arrow open" id="arrow-bank">▼</span>
+        </div>
+        <div class="collapsible-body open" id="body-bank">
+            <label>Zůstatek z minulých kol (Kč):</label>
+            <input type="number" id="prevBankInput" placeholder="0">
+            <button class="btn btn-blue" onclick="saveBank()">Uložit bank</button>
+            <label style="margin-top:20px;">Fond Naděje (Kč):</label>
+            <input type="number" id="fondNadjejeInput" placeholder="0">
+            <button class="btn btn-blue" onclick="saveFond()">Uložit Fond</button>
+            <button class="btn btn-red" style="margin-top:20px; font-size:0.8em" onclick="clearStats()">VYNULOVAT ŽEBŘÍČKY (STATISTIKY)</button>
+        </div>
     </div>
 
     <div class="card">
-        <h2>📋 ARCHIV VŠECH TIPŮ</h2>
-        <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Všechny tipy se jmény hráčů, zápasy a výsledky.</p>
-        <div id="betsArchive" style="overflow-x:auto; font-size:0.85em;">Načítám...</div>
+        <div class="collapsible-header" onclick="toggleSection('newMatch')">
+            <h2>🚀 Vypsat nový zápas</h2>
+            <span class="collapse-arrow open" id="arrow-newMatch">▼</span>
+        </div>
+        <div class="collapsible-body open" id="body-newMatch">
+            <div style="display:flex; gap:15px;">
+                <div style="flex:1;"><label>Domácí:</label><input list="statyList" id="d" placeholder="Domácí tým"></div>
+                <div style="flex:1;"><label>Hosté:</label><input list="statyList" id="h" placeholder="Hostující tým"></div>
+            </div>
+            <label>Uzávěrka (Deadline):</label>
+            <input type="datetime-local" id="dl">
+            <button id="pubBtn" class="btn btn-green" onclick="addM()">Uveřejnit na webu</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="collapsible-header" onclick="toggleSection('activeMatches')">
+            <h2>📊 Aktivní zápasy</h2>
+            <span class="collapse-arrow open" id="arrow-activeMatches">▼</span>
+        </div>
+        <div class="collapsible-body open" id="body-activeMatches">
+            <div id="activeMatches">Načítám...</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="collapsible-header" onclick="toggleSection('history')">
+            <h2>📜 Historie (Vyhodnoceno)</h2>
+            <span class="collapse-arrow" id="arrow-history">▼</span>
+        </div>
+        <div class="collapsible-body" id="body-history">
+            <div id="historyMatches">Zatím žádná historie.</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="collapsible-header" onclick="toggleSection('users')">
+            <h2>👥 Správa uživatelů</h2>
+            <span class="collapse-arrow" id="arrow-users">▼</span>
+        </div>
+        <div class="collapsible-body" id="body-users">
+            <div id="usersList">Načítám...</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="collapsible-header" onclick="toggleSection('archive')">
+            <h2>📋 Archiv všech tipů</h2>
+            <span class="collapse-arrow" id="arrow-archive">▼</span>
+        </div>
+        <div class="collapsible-body" id="body-archive">
+            <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Všechny tipy se jmény hráčů, zápasy a výsledky.</p>
+            <div id="betsArchive" style="overflow-x:auto; font-size:0.85em;">Načítám...</div>
+        </div>
     </div>
 </div>
 
@@ -196,6 +276,57 @@
     
     let currentStrelci = [], openMatches = {};
 
+    function toggleSection(id) {
+        const body = document.getElementById(`body-${id}`);
+        const arrow = document.getElementById(`arrow-${id}`);
+        body.classList.toggle('open');
+        arrow.classList.toggle('open');
+    }
+
+    function loadUsers() {
+        db.ref('sazkyData/uzivatele').on('value', snap => {
+            const users = snap.val() || {};
+            const container = document.getElementById('usersList');
+            if (Object.keys(users).length === 0) {
+                container.innerHTML = '<p style="color:#718096; font-size:0.9em;">Žádní uživatelé.</p>';
+                return;
+            }
+            container.innerHTML = Object.keys(users).map(name => `
+                <div class="user-row">
+                    <span class="user-name">👤 ${name}</span>
+                    <div>
+                        <button class="small-btn" style="background:var(--blue);" onclick="resetPassword('${name}')">Reset hesla</button>
+                        <button class="small-btn" style="background:var(--red);" onclick="deleteUser('${name}')">Smazat</button>
+                    </div>
+                </div>`).join('');
+        });
+    }
+
+    function resetPassword(name) {
+        checkAuth();
+        const newPass = prompt(`Nové heslo pro ${name}:`);
+        if (!newPass || newPass.length < 4) return alert('Heslo musí mít aspoň 4 znaky.');
+        db.ref(`sazkyData/uzivatele/${name}`).update({ heslo: btoa(newPass) }).then(() => {
+            const msg = document.getElementById('statusMsg');
+            msg.innerText = `Heslo pro ${name} změněno! 🔑`;
+            msg.style.background = 'var(--blue)';
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        });
+    }
+
+    function deleteUser(name) {
+        checkAuth();
+        if (!confirm(`Opravdu smazat uživatele ${name}?`)) return;
+        db.ref(`sazkyData/uzivatele/${name}`).remove().then(() => {
+            const msg = document.getElementById('statusMsg');
+            msg.innerText = `Uživatel ${name} smazán! 🗑️`;
+            msg.style.background = 'var(--red)';
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        });
+    }
+
     function checkAuth() {
         if (!sessionStorage.getItem('adminTime') || (Date.now() - sessionStorage.getItem('adminTime') > 300000)) {
             const h = prompt("Heslo:");
@@ -221,6 +352,7 @@
             document.getElementById('fondNadjejeInput').value = snap.val() || 0;
         });
         loadBetsArchive();
+        loadUsers();
     }
 
     function saveBank() {
