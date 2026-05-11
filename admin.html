@@ -56,6 +56,35 @@
         .tag { background: white; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
         .tag b { cursor: pointer; color: var(--red); }
         textarea { height: 80px; resize: vertical; }
+        
+        .bets-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .bets-table th {
+            background: #3182ce;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .bets-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .bets-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .bets-result-ok { color: var(--green); font-weight: bold; }
+        .bets-result-fail { color: var(--red); }
     </style>
 </head>
 <body onload="initAdmin()">
@@ -83,6 +112,11 @@
         <label>Zůstatek z minulých kol (Kč):</label>
         <input type="number" id="prevBankInput" placeholder="0">
         <button class="btn btn-blue" onclick="saveBank()">Uložit bank</button>
+        
+        <label style="margin-top:20px;">Fond Naděje (Kč):</label>
+        <input type="number" id="fondNadjejeInput" placeholder="0">
+        <button class="btn btn-blue" onclick="saveFond()">Uložit Fond</button>
+        
         <button class="btn btn-red" style="margin-top:20px; font-size:0.8em" onclick="clearStats()">VYNULOVAT ŽEBŘÍČKY (STATISTIKY)</button>
     </div>
 
@@ -105,6 +139,12 @@
     <div class="history-section">
         <h2>📜 Historie (Vyhodnoceno)</h2>
         <div id="historyMatches">Zatím žádná historie.</div>
+    </div>
+
+    <div class="card">
+        <h2>📋 ARCHIV VŠECH TIPŮ</h2>
+        <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Všechny tipy se jmény hráčů, zápasy a výsledky.</p>
+        <div id="betsArchive" style="overflow-x:auto; font-size:0.85em;">Načítám...</div>
     </div>
 </div>
 
@@ -177,11 +217,20 @@
         db.ref('sazkyData/prevedenyBank').on('value', snap => {
             document.getElementById('prevBankInput').value = snap.val() || 0;
         });
+        db.ref('sazkyData/fondNadeje').on('value', snap => {
+            document.getElementById('fondNadjejeInput').value = snap.val() || 0;
+        });
+        loadBetsArchive();
     }
 
     function saveBank() {
         checkAuth();
         db.ref('sazkyData/prevedenyBank').set(parseInt(document.getElementById('prevBankInput').value) || 0).then(() => alert("Bank uložen."));
+    }
+
+    function saveFond() {
+        checkAuth();
+        db.ref('sazkyData/fondNadeje').set(parseInt(document.getElementById('fondNadjejeInput').value) || 0).then(() => alert("Fond Naděje uložen."));
     }
     
     function clearStats() {
@@ -429,6 +478,53 @@
     }
     function markPaid(mid, sid) { db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"); }
     function deleteBet(mid, sid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}`).remove(); }
+    function loadBetsArchive() {
+        db.ref('sazkyData/zapasy').once('value', snap => {
+            const zapasyData = snap.val() || {};
+            let rows = [];
+
+            Object.entries(zapasyData).forEach(([mid, m]) => {
+                const matchName = `${m.domaci} vs ${m.hoste}`;
+                const vysledek = m.vysledek || '—';
+                const status = m.status === 'vyhodnoceno' ? '✅' : '⏳';
+
+                if(m.sazky) {
+                    Object.values(m.sazky).forEach(s => {
+                        const skoreMatch = vysledek !== '—' && s.skore === vysledek ? '✅' : s.skore === vysledek ? '✅' : '❌';
+                        const strikerMatch = vysledek !== '—' ? '?' : '?';
+                        rows.push({
+                            hrac: s.jmeno,
+                            zapas: matchName,
+                            tip: `${s.skore}/${s.strelec}`,
+                            vysledek: vysledek,
+                            skore: skoreMatch,
+                            stav: s.stav || status
+                        });
+                    });
+                }
+            });
+
+            let html = '<table class="bets-table"><thead><tr><th>Hráč</th><th>Zápas</th><th>Tip (skóre/střelec)</th><th>Výsledek</th><th>Stav</th></tr></thead><tbody>';
+            
+            if(rows.length === 0) {
+                html += '<tr><td colspan="5" style="text-align:center; padding:20px;">Zatím žádné sázky.</td></tr>';
+            } else {
+                rows.forEach(r => {
+                    html += `<tr>
+                        <td><strong>${r.hrac}</strong></td>
+                        <td>${r.zapas}</td>
+                        <td>${r.tip}</td>
+                        <td>${r.vysledek}</td>
+                        <td>${r.stav}</td>
+                    </tr>`;
+                });
+            }
+            
+            html += '</tbody></table>';
+            document.getElementById('betsArchive').innerHTML = html;
+        });
+    }
+
     function deleteM(mid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}`).remove(); }
 
     let testMatchIds = [];
