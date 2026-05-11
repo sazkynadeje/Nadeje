@@ -69,6 +69,15 @@
     <a href="index.html" class="btn-back">← ZPĚT NA WEB</a>
     <h1 style="text-align: center;">⚙️ Administrace v4.9.4</h1>
 
+    <div class="card" style="border: 2px dashed #e2e8f0;">
+        <h2>🧪 Testovací data</h2>
+        <p style="font-size:0.9em; color:#718096; margin:0 0 15px 0;">Vloží do Firebase 2 testovací zápasy s několika sázkami od různých hráčů. Deadliny jsou nastaveny dopředu i dozadu pro otestování obou stavů.</p>
+        <button class="btn btn-blue" onclick="insertTestData()">VLOŽIT TESTOVACÍ DATA</button>
+        <button class="btn btn-green" style="margin-top:10px;" onclick="autoEvalTestData()">🏆 AUTOMATICKY VYHODNOTIT</button>
+        <button class="btn btn-red" style="margin-top:10px; font-size:0.8em" onclick="clearTestData()">SMAZAT TESTOVACÍ DATA</button>
+        <div id="evalLog" style="margin-top:15px; font-size:0.82em; color:#4a5568; background:#f8fafc; border-radius:10px; padding:10px; display:none;"></div>
+    </div>
+
     <div class="card">
         <h2>💰 Správa banku</h2>
         <label>Zůstatek z minulých kol (Kč):</label>
@@ -417,6 +426,203 @@
     function markPaid(mid, sid) { db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅"); }
     function deleteBet(mid, sid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}`).remove(); }
     function deleteM(mid) { if(confirm("Smazat?")) db.ref(`sazkyData/zapasy/${mid}`).remove(); }
+
+    let testMatchIds = [];
+
+    function autoEvalTestData() {
+        const ids = JSON.parse(localStorage.getItem('testMatchIds') || '[]');
+        if(ids.length === 0) return alert("Nejdřív vlož testovací data.");
+        if(!confirm("Automaticky vyhodnotit oba testovací zápasy?")) return;
+
+        // Výsledky testovacích zápasů:
+        // Zápas 1: Česko vs Německo → 2:1, střelec: Schick
+        //   Petr:  2:1 + Schick ✅ → 🏆 (skóre + střelec)
+        //   Jana:  1:0 + Kuchta ❌
+        //   Tomáš: 2:1 + Hlozek ✅ → ✅ (jen skóre)
+        //   Lucie: 0:2 + Muller ❌
+        //
+        // Zápas 2: Francie vs Španělsko → 1:1, střelec: Mbappe
+        //   Petr:  1:1 + Mbappe ✅ → 🏆 (skóre + střelec)
+        //   Jana:  2:0 + Giroud ❌
+        //   Tomáš: 1:2 + Morata ❌
+
+        const log = document.getElementById('evalLog');
+        log.style.display = 'block';
+        log.innerHTML = "⏳ Vyhodnocuji...";
+
+        const testScenarios = [
+            { idx: 0, finalD: 2, finalH: 1, strelci: ["Schick"] },
+            { idx: 1, finalD: 1, finalH: 1, strelci: ["Mbappe"] }
+        ];
+
+        let done = 0;
+        let logLines = [];
+
+        testScenarios.forEach(scenario => {
+            const mid = ids[scenario.idx];
+            if(!mid) return;
+
+            const fs = `${scenario.finalD}:${scenario.finalH}`;
+            const fst = scenario.strelci.map(s => s.toLowerCase().trim());
+
+            db.ref(`sazkyData/zapasy/${mid}`).once('value', snap => {
+                const z = snap.val();
+                const sazkyEntries = Object.entries(z.sazky || {});
+
+                let winS = sazkyEntries.filter(([sid, s]) => {
+                    const parts = s.skore.split(':');
+                    return parseInt(parts[0]) === scenario.finalD && parseInt(parts[1]) === scenario.finalH;
+                });
+
+                let winB = winS.filter(([sid, s]) => {
+                    const pStr = s.strelec.toLowerCase().trim();
+                    return fst.some(r => r.includes(pStr) || pStr.includes(r));
+                });
+
+                let vyherciBanku = winB.length > 0 ? winB : winS;
+                const idVyhercuBanku = vyherciBanku.map(i => i[0]);
+
+                db.ref('sazkyData/prevedenyBank').once('value', bSnap => {
+                    const totalAmount = (sazkyEntries.length * 20) + (parseInt(bSnap.val()) || 0);
+
+                    sazkyEntries.forEach(([sid, s]) => {
+                        db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("❌");
+                        db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(0);
+                    });
+
+                    if(vyherciBanku.length > 0) {
+                        const share = Math.floor(totalAmount / vyherciBanku.length);
+                        vyherciBanku.forEach(([sid, s]) => {
+                            db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("🏆");
+                            db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/vyhraKc`).set(share);
+                            db.ref(`sazkyData/stats/${s.jmeno}/vyhry`).transaction(curr => (curr || 0) + share);
+                        });
+                        winS.forEach(([sid, s]) => {
+                            if(!idVyhercuBanku.includes(sid))
+                                db.ref(`sazkyData/zapasy/${mid}/sazky/${sid}/stav`).set("✅");
+                        });
+                        db.ref('sazkyData/prevedenyBank').set(0);
+                    } else {
+                        db.ref('sazkyData/prevedenyBank').set(totalAmount);
+                    }
+
+                    sazkyEntries.forEach(([sid, s]) => {
+                        const parts = s.skore.split(':');
+                        const sD = parseInt(parts[0]), sH = parseInt(parts[1]);
+                        const hitsScore = sD === scenario.finalD && sH === scenario.finalH;
+                        const pStr = s.strelec.toLowerCase().trim();
+                        const hitsStriker = fst.some(r => r.includes(pStr) || pStr.includes(r));
+                        let hitsTrend = false;
+                        if (scenario.finalD > scenario.finalH && sD > sH) hitsTrend = true;
+                        else if (scenario.finalD < scenario.finalH && sD < sH) hitsTrend = true;
+                        else if (scenario.finalD === scenario.finalH && sD === sH) hitsTrend = true;
+
+                        let ziskNB = 0;
+                        if(hitsScore) ziskNB += 5;
+                        if(hitsStriker) ziskNB += 3;
+                        if(hitsTrend) ziskNB += 1;
+
+                        db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
+                            c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, celkoveBody:0, pocetTipu:0};
+                            if(hitsScore) c.trefeneSkore = (c.trefeneSkore || 0) + 1;
+                            if(hitsStriker) c.trefeniStrelci = (c.trefeniStrelci || 0) + 1;
+                            if(hitsTrend) c.trefenyTrend = (c.trefenyTrend || 0) + 1;
+                            c.celkoveBody = (c.celkoveBody || 0) + ziskNB;
+                            c.pocetTipu = (c.pocetTipu || 0) + 1;
+                            return c;
+                        });
+
+                        logLines.push(`${z.domaci} vs ${z.hoste} | ${s.jmeno}: tip ${s.skore}+${s.strelec} → skóre:${hitsScore?'✅':'❌'} střelec:${hitsStriker?'✅':'❌'} trend:${hitsTrend?'✅':'❌'} (+${ziskNB} NB)`);
+                    });
+
+                    db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
+                    db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
+                    db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(scenario.strelci);
+
+                    done++;
+                    if(done === testScenarios.length) {
+                        log.innerHTML = "<b>📋 Výsledky vyhodnocení:</b><br><br>" + logLines.join('<br>');
+                    }
+                });
+            });
+        });
+    }
+
+    function insertTestData() {
+        if(!confirm("Vložit testovací zápasy a sázky do Firebase?")) return;
+
+        const now = new Date();
+        const future = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2 hodiny
+        const past = new Date(now.getTime() - 1 * 60 * 60 * 1000);   // -1 hodina (uzavřeno)
+
+        const formatDL = (d) => d.toISOString().slice(0, 16);
+
+        const zapas1 = {
+            domaci: "Česko", hoste: "Německo",
+            kodD: "cz", kodH: "de",
+            deadline: formatDL(future),
+            status: "aktivni"
+        };
+
+        const zapas2 = {
+            domaci: "Francie", hoste: "Španělsko",
+            kodD: "fr", kodH: "es",
+            deadline: formatDL(past),
+            status: "aktivni"
+        };
+
+        const sazky1 = [
+            { jmeno: "Petr", skore: "2:1", strelec: "Schick", skryt: false, stav: "⏳" },
+            { jmeno: "Jana", skore: "1:0", strelec: "Kuchta", skryt: false, stav: "⏳" },
+            { jmeno: "Tomáš", skore: "2:1", strelec: "Hlozek", skryt: true, stav: "⏳" },
+            { jmeno: "Lucie", skore: "0:2", strelec: "Muller", skryt: false, stav: "⏳" },
+        ];
+
+        const sazky2 = [
+            { jmeno: "Petr", skore: "1:1", strelec: "Mbappe", skryt: false, stav: "⏳" },
+            { jmeno: "Jana", skore: "2:0", strelec: "Giroud", skryt: false, stav: "⏳" },
+            { jmeno: "Tomáš", skore: "1:2", strelec: "Morata", skryt: false, stav: "⏳" },
+        ];
+
+        testMatchIds = [];
+
+        db.ref('sazkyData/zapasy').push(zapas1).then(ref1 => {
+            testMatchIds.push(ref1.key);
+            sazky1.forEach(s => db.ref(`sazkyData/zapasy/${ref1.key}/sazky`).push(s));
+
+            db.ref('sazkyData/zapasy').push(zapas2).then(ref2 => {
+                testMatchIds.push(ref2.key);
+                sazky2.forEach(s => db.ref(`sazkyData/zapasy/${ref2.key}/sazky`).push(s));
+
+                // Testovací uživatelé
+                db.ref('sazkyData/uzivatele/Petr').set({ heslo: btoa('1234') });
+                db.ref('sazkyData/uzivatele/Jana').set({ heslo: btoa('1234') });
+                db.ref('sazkyData/uzivatele/Tomas').set({ heslo: btoa('1234') });
+                db.ref('sazkyData/uzivatele/Lucie').set({ heslo: btoa('1234') });
+
+                localStorage.setItem('testMatchIds', JSON.stringify(testMatchIds));
+
+                const msg = document.getElementById('statusMsg');
+                msg.innerText = "TESTOVACÍ DATA VLOŽENA! 🧪";
+                msg.style.background = "#3182ce";
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+            });
+        });
+    }
+
+    function clearTestData() {
+        const ids = JSON.parse(localStorage.getItem('testMatchIds') || '[]');
+        if(ids.length === 0) return alert("Žádné testovací zápasy k smazání.");
+        if(!confirm(`Smazat ${ids.length} testovací zápas(y)?`)) return;
+        ids.forEach(id => db.ref(`sazkyData/zapasy/${id}`).remove());
+        localStorage.removeItem('testMatchIds');
+        const msg = document.getElementById('statusMsg');
+        msg.innerText = "TESTOVACÍ DATA SMAZÁNA! 🗑️";
+        msg.style.background = "#e53e3e";
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 3000);
+    }
 </script>
 </body>
 </html>
