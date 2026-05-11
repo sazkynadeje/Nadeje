@@ -819,7 +819,7 @@
         let vkladyDnes = 0;
         let sumActive = 0;
         let totalBetsCount = 0;
-        const nextMatch = zapasy.find(z => z.status !== 'evaluated');
+        const nextMatch = zapasy.find(z => z.status !== 'vyhodnoceno');
 
         zapasy.forEach(z => {
             if (z.sazky && z.status !== "vyhodnoceno") {
@@ -866,7 +866,7 @@
             
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-                    <div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${tot*20} Kč</div>
+                    <div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">${isEvaluated ? '' : `BANK: ${tot*20} Kč`}</div>
                     ${isEvaluated ? `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`}
                 </div>
                 <div class="flags-wrapper">
