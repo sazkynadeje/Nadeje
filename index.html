@@ -664,6 +664,11 @@
             <span class="bank-total-label">Fond Naděje (Kumulováno):</span>
             <span class="bank-total-val" style="color: #f1c40f;"><span id="uiHopeIndex">0</span> Kč</span>
         </div>
+        <div style="display:flex; justify-content:center; gap:16px; margin-top:10px; font-size:0.75em; opacity:0.7;">
+            <span>🥇 <b id="hope-1">0</b> Kč</span>
+            <span>🥈 <b id="hope-2">0</b> Kč</span>
+            <span>🥉 <b id="hope-3">0</b> Kč</span>
+        </div>
     </div>
 
     <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
@@ -945,7 +950,11 @@
     });
 
     db.ref('sazkyData/fondNadeje').on('value', snap => {
-        document.getElementById('uiHopeIndex').innerText = snap.val() || 0;
+        const fond = snap.val() || 0;
+        document.getElementById('uiHopeIndex').innerText = fond;
+        document.getElementById('hope-1').innerText = Math.floor(fond * 0.5);
+        document.getElementById('hope-2').innerText = Math.floor(fond * 0.3);
+        document.getElementById('hope-3').innerText = Math.floor(fond * 0.1);
     });
 
     function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); if(!el) return; document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
