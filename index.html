@@ -762,6 +762,10 @@
         });
     }
 
+    let localCart = {};
+    let activeDeadlines = {};
+    let lastSnap = null;
+
     function doRegister() {
         const name = document.getElementById('regName').value.trim();
         const pass = document.getElementById('regPass').value;
@@ -806,10 +810,6 @@
     if (currentUser) {
         loginSuccess(currentUser);
     }
-
-    let localCart = {};
-    let activeDeadlines = {};
-    let lastSnap = null; // uložíme poslední data pro překreslení po přihlášení
 
     function renderMatches(data) {
         const zapasy = data.zapasy ? Object.entries(data.zapasy).map(([key, val]) => ({ ...val, id: key })) : [];
