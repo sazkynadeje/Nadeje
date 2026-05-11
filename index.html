@@ -576,25 +576,42 @@
     let localCart = {};
     let activeDeadlines = {};
 
-    db.ref('sazkyData').on('value', snap => {
-        const data = snap.val() || {};
-        const container = document.getElementById('matchList');
-        container.innerHTML = "";
-        const prevBank = parseInt(data.prevedenyBank || 0);
-        
-        if (!data.zapasy) {
-            document.getElementById('uiMainBank').innerText = prevBank;
-            document.getElementById('uiTotalBank').innerText = prevBank;
-            return;
+    // --- BOD C: Úprava logiky banků v index.html ---
+
+db.ref('sazkyData').on('value', snap => {
+    const data = snap.val() || {};
+    const zapasy = data.zapasy || [];
+    const prevBank = data.prevedenyBank || 0; // Peníze, které nikdo nevyhrál minule
+
+    let vkladyDnes = 0;
+    let sumActive = 0;
+    let totalBetsCount = 0;
+
+    // Najdeme nejbližší nevyhodnocený zápas pro "Maximální výhru dne"
+    const nextMatch = zapasy.find(z => z.status !== 'evaluated');
+
+    zapasy.forEach(z => {
+        if (z.sazky) {
+            const count = Object.keys(z.sazky).length;
+            totalBetsCount += count; 
+            
+            // Do výherního banku počítáme 20 Kč z každé sázky
+            sumActive += (count * 20); 
+            
+            if (nextMatch && z.id === nextMatch.id) {
+                vkladyDnes = (count * 20);
+            }
         }
+    });
 
-        const zapasy = Object.entries(data.zapasy).map(([id, m]) => ({ id, ...m })).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-        let sumActive = 0; zapasy.forEach(z => { if (z.status !== "vyhodnoceno" && z.sazky) sumActive += Object.keys(z.sazky).length * 20; });
-        const aktivniZ = zapasy.filter(z => z.status !== "vyhodnoceno");
-        const vkladyDnes = (aktivniZ.length > 0 && aktivniZ[0].sazky) ? Object.keys(aktivniZ[0].sazky).length * 20 : 0;
-
-        document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
-        document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
+    // Zobrazení hodnot v uživatelském rozhraní
+    // K vkladům vždy přičítáme převedený bank z minulých kol
+    document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
+    document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
+    
+    // NOVINKA: Index naděje počítá těch zbývajících 5 Kč z každé sázky
+    document.getElementById('uiHopeIndex').innerText = totalBetsCount * 5;
+});
 
         zapasy.forEach(m => {
             activeDeadlines[m.id] = m.deadline;
