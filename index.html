@@ -954,7 +954,7 @@
         document.getElementById('uiHopeIndex').innerText = fond;
         document.getElementById('hope-1').innerText = Math.floor(fond * 0.5);
         document.getElementById('hope-2').innerText = Math.floor(fond * 0.3);
-        document.getElementById('hope-3').innerText = Math.floor(fond * 0.1);
+        document.getElementById('hope-3').innerText = Math.floor(fond * 0.2);
     });
 
     function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); if(!el) return; document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
