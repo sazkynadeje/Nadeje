@@ -671,7 +671,7 @@ db.ref('sazkyData').on('value', snap => {
 
     function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
     function uiUpdateFAB() { const count = Object.keys(localCart).length; const fab = document.getElementById('fabCart'); const badge = document.getElementById('fabBadge'); if(count > 0) { fab.style.display = 'flex'; badge.innerText = count; } else { fab.style.display = 'none'; } }
-    function uiOpenCart() { const list = document.getElementById('cartItemsContainer'); list.innerHTML = ""; let sum = 0; Object.entries(localCart).forEach(([id, data]) => { sum += 20; list.innerHTML += `<div class="cart-item"><div><div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div><div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div></div><div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div></div>`; }); document.getElementById('uiCartTotal').innerText = `${sum} Kč`; document.getElementById('cartViewPre').style.display = 'block'; document.getElementById('cartViewPost').style.display = 'none'; document.getElementById('cartModal').style.display = 'block'; }
+    function uiOpenCart() { const list = document.getElementById('cartItemsContainer'); list.innerHTML = ""; let sum = 0; Object.entries(localCart).forEach(([id, data]) => { sum += 25; list.innerHTML += `<div class="cart-item"><div><div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div><div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div></div><div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div></div>`; }); document.getElementById('uiCartTotal').innerText = `${sum} Kč`; document.getElementById('cartViewPre').style.display = 'block'; document.getElementById('cartViewPost').style.display = 'none'; document.getElementById('cartModal').style.display = 'block'; }
     function uiCloseCart() { document.getElementById('cartModal').style.display = 'none'; }
     function actionAddToTicket(id, mName) { 
         const name = document.getElementById(`name-${id}`).value, 
@@ -705,7 +705,7 @@ db.ref('sazkyData').on('value', snap => {
             db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: data.jmeno, skore: data.skore, strelec: data.strelec, skryt: data.skryt, stav: "⏳" }); 
             lastUser = data.jmeno; 
         }); 
-        const totalSum = Object.keys(localCart).length * 20;
+        const totalSum = Object.keys(localCart).length * 25;
         const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
         
         // QR kód
