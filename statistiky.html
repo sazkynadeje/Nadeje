@@ -158,12 +158,13 @@ document.getElementById('globalHopeMoney').innerText = celkemSazekHistoricky * 5
             const isMoney = elementId === 'leaderboard-money';
             
             const items = Object.entries(data).map(([name, val]) => {
-                const total = parseInt(val.pocetTipu) || 1;
+                const total = parseInt(val.pocetTipu) || 0;
                 const s = parseInt(val.trefeneSkore) || 0;
                 const st = parseInt(val.trefeniStrelci) || 0;
                 const tr = parseInt(val.trefenyTrend) || 0;
-                const partRate = (total / (globalMaxMatches || 1));
-                const valNum = isMain ? (s * 5 + st * 3 + tr * 1) : (parseInt(val[property]) || 0);
+                const partRate = total > 0 ? (total / (globalMaxMatches || 1)) : 0;
+                const valNum = isMain ? (parseInt(val.celkoveBody) || 0) : (parseInt(val[property]) || 0);
+                const successRate = total > 0 ? valNum / total : 0;
 
                 return { 
                     name, 
@@ -171,7 +172,7 @@ document.getElementById('globalHopeMoney').innerText = celkemSazekHistoricky * 5
                     raw: val, 
                     s, st, tr, total,
                     part: Math.round(partRate * 100),
-                    successRate: valNum / total
+                    successRate
                 };
             }).filter(i => i.value > 0);
 
@@ -242,15 +243,15 @@ document.getElementById('globalHopeMoney').innerText = celkemSazekHistoricky * 5
         }
 
         function showPlayerCard(name, data) {
-            const total = parseInt(data.pocetTipu) || 1;
-            const part = Math.round((total / globalMaxMatches) * 100);
+            const total = parseInt(data.pocetTipu) || 0;
+            const part = globalMaxMatches > 0 ? Math.round((total / globalMaxMatches) * 100) : 0;
             const s = parseInt(data.trefeneSkore) || 0;
             const st = parseInt(data.trefeniStrelci) || 0;
             const tr = parseInt(data.trefenyTrend) || 0;
-            const scR = Math.round(s / total * 100);
-            const plR = Math.round(st / total * 100);
-            const trR = Math.round(tr / total * 100);
-            const nb = (s * 5 + st * 3 + tr * 1);
+            const scR = total > 0 ? Math.round(s / total * 100) : 0;
+            const plR = total > 0 ? Math.round(st / total * 100) : 0;
+            const trR = total > 0 ? Math.round(tr / total * 100) : 0;
+            const nb = parseInt(data.celkoveBody) || 0;
 
             let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
             if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
