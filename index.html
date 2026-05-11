@@ -578,41 +578,37 @@
 
     // --- BOD C: Úprava logiky banků v index.html ---
 
-db.ref('sazkyData').on('value', snap => {
-    const data = snap.val() || {};
-    const zapasy = data.zapasy || [];
-    const prevBank = data.prevedenyBank || 0; // Peníze, které nikdo nevyhrál minule
+// --- OPRAVENÝ BLOK: LOGIKA BANKŮ + VYKRESLOVÁNÍ ZÁPASŮ ---
+    db.ref('sazkyData').on('value', snap => {
+        const data = snap.val() || {};
+        const zapasy = data.zapasy || [];
+        const prevBank = data.prevedenyBank || 0;
+        const container = document.getElementById('matchList');
+        
+        // 1. VÝPOČET BANKŮ
+        let vkladyDnes = 0;
+        let sumActive = 0;
+        let totalBetsCount = 0;
+        const nextMatch = zapasy.find(z => z.status !== 'evaluated');
 
-    let vkladyDnes = 0;
-    let sumActive = 0;
-    let totalBetsCount = 0;
-
-    // Najdeme nejbližší nevyhodnocený zápas pro "Maximální výhru dne"
-    const nextMatch = zapasy.find(z => z.status !== 'evaluated');
-
-    zapasy.forEach(z => {
-        if (z.sazky) {
-            const count = Object.keys(z.sazky).length;
-            totalBetsCount += count; 
-            
-            // Do výherního banku počítáme 20 Kč z každé sázky
-            sumActive += (count * 20); 
-            
-            if (nextMatch && z.id === nextMatch.id) {
-                vkladyDnes = (count * 20);
+        zapasy.forEach(z => {
+            if (z.sazky) {
+                const count = Object.keys(z.sazky).length;
+                totalBetsCount += count; 
+                sumActive += (count * 20); 
+                if (nextMatch && z.id === nextMatch.id) {
+                    vkladyDnes = (count * 20);
+                }
             }
-        }
-    });
+        });
 
-    // Zobrazení hodnot v uživatelském rozhraní
-    // K vkladům vždy přičítáme převedený bank z minulých kol
-    document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
-    document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
-    
-    // NOVINKA: Index naděje počítá těch zbývajících 5 Kč z každé sázky
-    document.getElementById('uiHopeIndex').innerText = totalBetsCount * 5;
-});
+        document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
+        document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
+        document.getElementById('uiHopeIndex').innerText = totalBetsCount * 5;
 
+        // 2. VYKRESLOVÁNÍ ZÁPASŮ
+        container.innerHTML = ""; // Vyčistit seznam před novým vykreslením
+        
         zapasy.forEach(m => {
             activeDeadlines[m.id] = m.deadline;
             const now = Date.now();
@@ -621,7 +617,14 @@ db.ref('sazkyData').on('value', snap => {
             const isEvaluated = m.status === "vyhodnoceno";
 
             let t1=0, t0=0, t2=0, tot=0;
-            if(m.sazky) Object.values(m.sazky).forEach(s => { const parts = s.skore.split(':'); if(parseInt(parts[0]) > parseInt(parts[1])) t1++; else if(parseInt(parts[0]) === parseInt(parts[1])) t0++; else t2++; tot++; });
+            if(m.sazky) Object.values(m.sazky).forEach(s => { 
+                const parts = s.skore.split(':'); 
+                if(parseInt(parts[0]) > parseInt(parts[1])) t1++; 
+                else if(parseInt(parts[0]) === parseInt(parts[1])) t0++; 
+                else t2++; 
+                tot++; 
+            });
+            
             const p1 = tot ? (t1/tot)*100 : 33.3, p0 = tot ? (t0/tot)*100 : 33.3, p2 = tot ? (t2/tot)*100 : 33.3;
 
             let matchStrelci = [];
@@ -629,14 +632,34 @@ db.ref('sazkyData').on('value', snap => {
                 matchStrelci = m.strelciZapasu.map(s => s.toLowerCase().trim());
             }
 
-            const card = document.createElement('div'); card.className = "match-card"; card.onclick = () => uiToggleMatch(m.id);
-            card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;"><div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${tot*20} Kč</div>${isEvaluated ? `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`}</div>
-                <div class="flags-wrapper"><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.domaci}</small></div><div class="vs-circle">VS</div><div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.hoste}</small></div></div>
+            const card = document.createElement('div'); 
+            card.className = "match-card"; 
+            card.onclick = () => uiToggleMatch(m.id);
+            
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                    <div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">BANK: ${tot*20} Kč</div>
+                    ${isEvaluated ? `<div style="background:#27ae60; color:white; padding:6px 16px; border-radius:100px; font-weight:900; font-size:0.8em">VÝSLEDEK ${m.vysledek}</div>` : `<div id="timer-${m.id}" class="timer-box">--:--:--</div>`}
+                </div>
+                <div class="flags-wrapper">
+                    <div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.domaci}</small></div>
+                    <div class="vs-circle">VS</div>
+                    <div class="flag-container"><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small style="font-weight:800; opacity:0.8; display:block; margin-top:8px;">${m.hoste}</small></div>
+                </div>
                 <div class="barometer-container"><div class="bar-1" style="width:${p1}%"></div><div class="bar-0" style="width:${p0}%"></div><div class="bar-2" style="width:${p2}%"></div></div>
                 <div class="bar-labels"><span>${m.domaci.substring(0,3).toUpperCase()} ${Math.round(p1)}%</span><span>REMÍZA ${Math.round(p0)}%</span><span>${m.hoste.substring(0,3).toUpperCase()} ${Math.round(p2)}%</span></div>
                 <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">
                     ${isEvaluated && m.strelciZapasu ? `<div style="font-size:0.8em; opacity:0.6; margin-bottom:15px; text-align:center;">Střelci zápasu: ${m.strelciZapasu.join(', ')}</div>` : ''}
-                    ${(!isClosed && !isEvaluated) ? `<div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div><div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div><div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div><div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div><button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (25 Kč)</button>` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}<div id="bets-list-${m.id}" style="margin-top:30px;"></div></div>`;
+                    ${(!isClosed && !isEvaluated) ? `
+                        <div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div>
+                        <div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div>
+                        <div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div>
+                        <div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div>
+                        <button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (25 Kč)</button>
+                    ` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}
+                    <div id="bets-list-${m.id}" style="margin-top:30px;"></div>
+                </div>`;
+            
             container.appendChild(card);
 
             if (m.sazky) {
