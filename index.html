@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KANCELÁŘ NADĚJE v4.9.1</title>
 
-    <script src="stats.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="stats.js"></script>
 
     <style>
         /* --- ZÁKLADNÍ NASTAVENÍ A PROMĚNNÉ --- */
@@ -606,7 +605,7 @@
 
     db.ref('sazkyData').on('value', snap => {
         const data = snap.val() || {};
-        const zapasy = data.zapasy ? Object.values(data.zapasy) : [];
+        const zapasy = data.zapasy ? Object.entries(data.zapasy).map(([key, val]) => ({ ...val, id: key })) : [];
         const prevBank = data.prevedenyBank || 0;
         const container = document.getElementById('matchList');
         
