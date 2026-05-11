@@ -822,7 +822,7 @@
         const nextMatch = zapasy.find(z => z.status !== 'evaluated');
 
         zapasy.forEach(z => {
-            if (z.sazky) {
+            if (z.sazky && z.status !== "vyhodnoceno") {
                 const count = Object.keys(z.sazky).length;
                 totalBetsCount += count; 
                 sumActive += (count * 20); 
