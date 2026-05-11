@@ -405,7 +405,11 @@
 
                 db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                 db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
-                db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(rawStrelci); 
+                db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(rawStrelci);
+
+                // Připočítat 5 Kč za každou sázku do Fondu Naděje
+                const fondPrispevek = sazkyEntries.length * 5;
+                db.ref('sazkyData/fondNadeje').transaction(curr => (curr || 0) + fondPrispevek);
                 
                 document.getElementById(`raw-${mid}`).value = "";
                 const msg = document.getElementById('statusMsg');
@@ -538,6 +542,10 @@
                     db.ref(`sazkyData/zapasy/${mid}/status`).set("vyhodnoceno");
                     db.ref(`sazkyData/zapasy/${mid}/vysledek`).set(fs);
                     db.ref(`sazkyData/zapasy/${mid}/strelciZapasu`).set(scenario.strelci);
+
+                    // Připočítat 5 Kč za každou sázku do Fondu Naděje
+                    const fondPrispevek = sazkyEntries.length * 5;
+                    db.ref('sazkyData/fondNadeje').transaction(curr => (curr || 0) + fondPrispevek);
 
                     done++;
                     if(done === testScenarios.length) {
