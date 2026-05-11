@@ -384,11 +384,12 @@
                     if (hitsTrend) ziskNB += 1;
 
                     db.ref(`sazkyData/stats/${s.jmeno}`).transaction(c => {
-                        c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, celkoveBody:0};
+                        c = c || {vyhry:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, celkoveBody:0, pocetTipu:0};
                         if(hitsScore) c.trefeneSkore = (c.trefeneSkore || 0) + 1;
                         if(hitsStriker) c.trefeniStrelci = (c.trefeniStrelci || 0) + 1;
                         if(hitsTrend) c.trefenyTrend = (c.trefenyTrend || 0) + 1;
                         c.celkoveBody = (c.celkoveBody || 0) + ziskNB;
+                        c.pocetTipu = (c.pocetTipu || 0) + 1;
                         return c;
                     });
                 });
