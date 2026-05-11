@@ -784,7 +784,15 @@
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('userBadge').style.display = 'flex';
         document.getElementById('userBadgeName').innerText = name;
-        if (lastSnap) renderMatches(lastSnap);
+        if (lastSnap) {
+            renderMatches(lastSnap);
+        } else {
+            // Firebase ještě nevrátil data — počkáme na listener
+            db.ref('sazkyData').once('value', snap => {
+                lastSnap = snap.val() || {};
+                renderMatches(lastSnap);
+            });
+        }
     }
 
     function doLogout() {
