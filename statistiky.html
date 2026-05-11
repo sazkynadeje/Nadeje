@@ -138,18 +138,17 @@
 
         db.ref('sazkyData/stats').on('value', snap => {
             const stats = snap.val() || {};
-            globalMaxMatches = Math.max(...Object.values(stats).map(p => p.pocetTipu || 0));
+            globalMaxMatches = Math.max(0, ...Object.values(stats).map(p => p.pocetTipu || 0));
 
             renderTable('leaderboard-total', stats, 'celkoveBody', ' NB', true);
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč', false);
             renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', false);
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x', false);
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x', false);
-            let celkemSazekHistoricky = 0;
-Object.values(stats).forEach(player => {
-    celkemSazekHistoricky += (parseInt(player.pocetTipu) || 0);
-});
-document.getElementById('globalHopeMoney').innerText = celkemSazekHistoricky * 5;
+        });
+
+        db.ref('sazkyData/fondNadeje').on('value', snap => {
+            document.getElementById('globalHopeMoney').innerText = snap.val() || 0;
         });
 
         function renderTable(elementId, data, property, unit, isMain) {
