@@ -981,11 +981,16 @@
     
     function actionSendTicket() { 
         let lastUser = ""; 
+        const sazekCount = Object.keys(localCart).length;
         Object.entries(localCart).forEach(([mid, data]) => { 
             db.ref(`sazkyData/zapasy/${mid}/sazky`).push({ jmeno: data.jmeno, skore: data.skore, strelec: data.strelec, skryt: data.skryt, stav: "⏳" }); 
             lastUser = data.jmeno; 
-        }); 
-        const totalSum = Object.keys(localCart).length * 25;
+        });
+
+        // Připočítat 5 Kč za každou sázku do Fondu Naděje hned při podání
+        db.ref('sazkyData/fondNadeje').transaction(curr => (curr || 0) + (sazekCount * 5));
+
+        const totalSum = sazekCount * 25;
         const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
         
         document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`; 
