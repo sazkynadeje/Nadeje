@@ -232,7 +232,7 @@
                 container.innerHTML += `
                     <div class="stat-row ${glow}">
                         <span class="rank ${rankClass}">${item.displayRank}</span>
-                        <div class="name-box" onclick='showPlayerCard("${item.name}", ${JSON.stringify(item.raw)})'>
+                        <div class="name-box" onclick="window.location.href='profil.html?jmeno=' + encodeURIComponent('${item.name}')">
                             <span class="name">${item.name} ${rankNum === 1 && !item.isShared ? '👑' : ''}</span>
                             <div class="breakdown">${infoText}</div>
                         </div>
