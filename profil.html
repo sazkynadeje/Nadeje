@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil hráče - KANCELÁŘ NADĚJE</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;800&display=swap');
+
+        :root {
+            --neon: #00f2ff;
+            --dark: #0f172a;
+            --darker: #080e1a;
+            --gold: #ffd700;
+            --silver: #cbd5e0;
+            --bronze: #cd7f32;
+            --points: #ff00ff;
+            --green: #27ae60;
+            --red: #ff4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--darker);
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- POZADÍ --- */
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0,242,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,242,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(0,242,255,0.06) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px 60px;
+            position: relative; z-index: 1;
+        }
+
+        /* --- NAVIGACE --- */
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-back {
+            display: flex; align-items: center; gap: 8px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            font-size: 0.85em; font-weight: 600;
+            padding: 10px 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 100px;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            color: var(--neon);
+            border-color: rgba(0,242,255,0.3);
+        }
+
+        .logo-small {
+            max-width: 80px;
+            filter: drop-shadow(0 0 8px rgba(0,242,255,0.4));
+        }
+
+        /* --- HERO KARTA --- */
+        .hero-card {
+            background: linear-gradient(135deg, rgba(0,242,255,0.08) 0%, rgba(255,0,255,0.05) 100%);
+            border: 1px solid rgba(0,242,255,0.25);
+            border-radius: 30px;
+            padding: 35px 30px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: '';
+            position: absolute; top: 0; right: 0;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(0,242,255,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .player-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 5em;
+            color: rgba(0,242,255,0.08);
+            position: absolute;
+            top: 10px; right: 20px;
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+
+        .player-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3em;
+            color: var(--neon);
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px rgba(0,242,255,0.5);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .player-title {
+            color: var(--gold);
+            font-weight: 800;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .player-quote {
+            font-style: italic;
+            opacity: 0.45;
+            font-size: 0.82em;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .hero-stat {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 14px 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .hero-stat-val {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.9em;
+            color: white;
+            line-height: 1;
+        }
+
+        .hero-stat-val.gold { color: var(--gold); }
+        .hero-stat-val.neon { color: var(--neon); }
+        .hero-stat-val.points { color: var(--points); }
+
+        .hero-stat-label {
+            font-size: 0.62em;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            font-weight: 700;
+        }
+
+        /* --- FORMA --- */
+        .section-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.4;
+            font-weight: 800;
+            margin-bottom: 18px;
+        }
+
+        .forma-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .forma-item {
+            flex: 1;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s;
+            cursor: default;
+            max-width: 58px;
+        }
+
+        .forma-item:hover { transform: scale(1.1); }
+
+        .forma-win  { background: rgba(255,215,0,0.12);  border-color: rgba(255,215,0,0.3); }
+        .forma-ok   { background: rgba(39,174,96,0.12);  border-color: rgba(39,174,96,0.3); }
+        .forma-fail { background: rgba(255,68,68,0.08);  border-color: rgba(255,68,68,0.2); }
+        .forma-empty{ background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.05); opacity: 0.3; }
+
+        .forma-label {
+            font-size: 0.28em;
+            opacity: 0.6;
+            margin-top: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* --- PROGRESS BARY --- */
+        .stat-item {
+            margin-bottom: 18px;
+        }
+
+        .stat-item:last-child { margin-bottom: 0; }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-pct { color: var(--neon); font-weight: 800; }
+
+        .progress-bg {
+            height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .fill-neon   { background: linear-gradient(90deg, var(--neon), #00a8b5); box-shadow: 0 0 8px rgba(0,242,255,0.4); }
+        .fill-gold   { background: linear-gradient(90deg, var(--gold), #e6a000); box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+        .fill-points { background: linear-gradient(90deg, var(--points), #cc00cc); box-shadow: 0 0 8px rgba(255,0,255,0.4); }
+
+        /* --- ŽEBŘÍČEK POZICE --- */
+        .rank-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .rank-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-pos {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8em;
+            line-height: 1;
+            min-width: 35px;
+        }
+
+        .rank-pos.pos-1 { color: var(--gold); }
+        .rank-pos.pos-2 { color: var(--silver); }
+        .rank-pos.pos-3 { color: var(--bronze); }
+        .rank-pos.pos-other { color: rgba(255,255,255,0.4); }
+
+        .rank-info { flex: 1; }
+        .rank-cat { font-size: 0.7em; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .rank-val { font-weight: 800; font-size: 0.95em; }
+
+        /* --- HISTORIE TIPŮ --- */
+        .history-item {
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .history-item:last-child { border-bottom: none; }
+
+        .history-icon { font-size: 1.4em; min-width: 30px; text-align: center; }
+
+        .history-info { flex: 1; }
+        .history-match { font-size: 0.8em; opacity: 0.5; font-weight: 600; }
+        .history-tip { font-weight: 800; font-size: 0.95em; }
+        .history-striker { font-size: 0.78em; opacity: 0.6; margin-top: 2px; }
+
+        .history-nb {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3em;
+            color: var(--points);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* --- LOADING --- */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            opacity: 0.4;
+            font-size: 0.9em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* --- ANIMACE --- */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-up { animation: fadeUp 0.6s ease-out forwards; opacity: 0; }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="container">
+    <div class="nav">
+        <a href="statistiky.html" class="btn-back">← Žebříčky</a>
+        <a href="index.html"><img src="IMG_8429.png" class="logo-small" alt="Logo"></a>
+    </div>
+
+    <div id="profileContent">
+        <div class="loading">⏳ Načítám profil...</div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-NCdmsgA42FxnopKm92m1y5gUGw_z_uE",
+        authDomain: "nadeje-208bd.firebaseapp.com",
+        databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "nadeje-208bd",
+        storageBucket: "nadeje-208bd.firebasestorage.app",
+        messagingSenderId: "688478977789",
+        appId: "1:688478977789:web:512d1520cf96c9e59cc894"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Jméno hráče z URL parametru
+    const params = new URLSearchParams(window.location.search);
+    const playerName = params.get('jmeno');
+
+    if (!playerName) {
+        document.getElementById('profileContent').innerHTML = '<div class="loading">❌ Hráč nenalezen.</div>';
+    } else {
+        document.title = `${playerName} - KANCELÁŘ NADĚJE`;
+        loadProfile(playerName);
+    }
+
+    function getTitul(data, trR, part) {
+        let t = "Hledač štěstí"; let q = "I slepé kuře občas najde zrno...";
+        if (part >= 85 && trR < 45) { t = "Věrný Srdcař"; q = "Srdce bije pro kancl, i když tikety hoří."; }
+        if (trR > 65) { t = "Ledový Analytik"; q = "Čte hru jako otevřenou knihu."; }
+        if ((parseInt(data.trefeniStrelci) || 0) >= 4) { t = "Elitní Sniper"; q = "Trefí mouchu v letu, natož střelce."; }
+        if ((parseInt(data.trefeneSkore) || 0) >= 1) { t = "Hokejový Jasnovědec"; q = "Viděl ten výsledek už včera ve snu."; }
+        if ((parseInt(data.vyhry) || 0) > 400) { t = "Bankovní Lupič"; q = "Už pro něj jedou těžkooděnci."; }
+        return { t, q };
+    }
+
+    function loadProfile(name) {
+        // Načíst statistiky hráče + všechny zápasy paralelně
+        Promise.all([
+            db.ref(`sazkyData/stats/${name}`).once('value'),
+            db.ref('sazkyData/zapasy').once('value'),
+            db.ref('sazkyData/stats').once('value')
+        ]).then(([statSnap, zapasySnap, allStatsSnap]) => {
+            const data = statSnap.val();
+            if (!data) {
+                document.getElementById('profileContent').innerHTML = '<div class="loading">❌ Hráč nenalezen v databázi.</div>';
+                return;
+            }
+
+            const allStats = allStatsSnap.val() || {};
+            const zapasyData = zapasySnap.val() || {};
+
+            const total   = parseInt(data.pocetTipu) || 0;
+            const s       = parseInt(data.trefeneSkore) || 0;
+            const st      = parseInt(data.trefeniStrelci) || 0;
+            const tr      = parseInt(data.trefenyTrend) || 0;
+            const vyhry   = parseInt(data.vyhry) || 0;
+            const nb      = parseInt(data.celkoveBody) || 0;
+
+            const globalMax = Math.max(0, ...Object.values(allStats).map(p => p.pocetTipu || 0));
+            const part    = globalMax > 0 ? Math.round((total / globalMax) * 100) : 0;
+            const scR     = total > 0 ? Math.round(s / total * 100) : 0;
+            const plR     = total > 0 ? Math.round(st / total * 100) : 0;
+            const trR     = total > 0 ? Math.round(tr / total * 100) : 0;
+
+            const { t: titul, q: citace } = getTitul(data, trR, part);
+
+            // Číslo dresu — hash ze jména
+            const dressNum = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 99 + 1;
+
+            // --- Pozice v žebříčcích ---
+            function getRank(field) {
+                const sorted = Object.entries(allStats)
+                    .map(([n, v]) => ({ name: n, val: field === 'celkoveBody' ? (parseInt(v.celkoveBody) || 0) : (parseInt(v[field]) || 0) }))
+                    .filter(x => x.val > 0)
+                    .sort((a, b) => b.val - a.val);
+                const idx = sorted.findIndex(x => x.name === name);
+                return idx >= 0 ? idx + 1 : null;
+            }
+
+            const rankNB     = getRank('celkoveBody');
+            const rankMoney  = getRank('vyhry');
+            const rankScore  = getRank('trefeneSkore');
+            const rankPlayer = getRank('trefeniStrelci');
+            const rankTrend  = getRank('trefenyTrend');
+
+            // --- Historie tipů z vyhodnocených zápasů ---
+            let history = [];
+            Object.values(zapasyData).forEach(m => {
+                if (m.status !== 'vyhodnoceno' || !m.sazky) return;
+                Object.values(m.sazky).forEach(s => {
+                    if (s.jmeno !== name) return;
+
+                    const finalParts = (m.vysledek || '').split(':');
+                    const tipParts   = (s.skore || '').split(':');
+                    const hitsScore  = finalParts.length === 2 &&
+                        parseInt(tipParts[0]) === parseInt(finalParts[0]) &&
+                        parseInt(tipParts[1]) === parseInt(finalParts[1]);
+
+                    const strelciZap = (m.strelciZapasu || []).map(x => x.toLowerCase().trim());
+                    const pStr = (s.strelec || '').toLowerCase().trim();
+                    const hitsStriker = strelciZap.some(r => r.includes(pStr) || pStr.includes(r));
+
+                    const finalD = parseInt(finalParts[0]);
+                    const finalH = parseInt(finalParts[1]);
+                    const sD = parseInt(tipParts[0]);
+                    const sH = parseInt(tipParts[1]);
+                    let hitsTrend = false;
+                    if (finalD > finalH && sD > sH) hitsTrend = true;
+                    else if (finalD < finalH && sD < sH) hitsTrend = true;
+                    else if (finalD === finalH && sD === sH) hitsTrend = true;
+
+                    let nb = 0;
+                    if (hitsScore) nb += 5;
+                    if (hitsStriker) nb += 3;
+                    if (hitsTrend) nb += 1;
+
+                    let icon, stavLabel;
+                    if (s.stav === '🏆') { icon = '🏆'; stavLabel = `+${s.vyhraKc || 0} Kč`; }
+                    else if (s.stav === '✅' || hitsScore) { icon = '✅'; stavLabel = 'Trefil skóre'; }
+                    else { icon = '❌'; stavLabel = 'Netrefil'; }
+
+                    history.push({
+                        match: `${m.domaci} vs ${m.hoste}`,
+                        tip: s.skore,
+                        strelec: s.strelec,
+                        vysledek: m.vysledek,
+                        icon, stavLabel, nb,
+                        hitsScore, hitsStriker, hitsTrend
+                    });
+                });
+            });
+
+            // Forma — posledních 5
+            const forma5 = history.slice(-5).reverse();
+
+            // --- RENDER ---
+            function rankClass(r) {
+                if (!r) return 'pos-other';
+                if (r === 1) return 'pos-1';
+                if (r === 2) return 'pos-2';
+                if (r === 3) return 'pos-3';
+                return 'pos-other';
+            }
+
+            function rankLabel(r) { return r ? `${r}.` : '—'; }
+
+            function formaItem(item) {
+                if (!item) return `<div class="forma-item forma-empty">—</div>`;
+                let cls = 'forma-fail', emoji = '❌';
+                if (item.icon === '🏆') { cls = 'forma-win'; emoji = '🏆'; }
+                else if (item.icon === '✅') { cls = 'forma-ok'; emoji = '✅'; }
+                return `<div class="forma-item ${cls}" title="${item.match}">${emoji}<div class="forma-label">${item.tip}</div></div>`;
+            }
+
+            const formaHTML = Array.from({length: 5}, (_, i) => formaItem(forma5[i])).join('');
+
+            const historyHTML = history.length === 0
+                ? '<div style="opacity:0.4; text-align:center; padding:20px; font-size:0.85em;">Zatím žádná vyhodnocená sázka.</div>'
+                : [...history].reverse().map(h => `
+                    <div class="history-item">
+                        <div class="history-icon">${h.icon}</div>
+                        <div class="history-info">
+                            <div class="history-match">${h.match}</div>
+                            <div class="history-tip">Tip: ${h.tip} | Výsledek: ${h.vysledek}</div>
+                            <div class="history-striker">🎯 ${h.strelec} ${h.hitsStriker ? '<span style="color:var(--neon)">✓ TREFIL</span>' : ''} &nbsp;${h.hitsTrend ? '<span style="color:#27ae60; font-size:0.85em">📈 trend ✓</span>' : ''}</div>
+                        </div>
+                        <div class="history-nb">${h.nb > 0 ? '+' + h.nb : '0'} NB</div>
+                    </div>`).join('');
+
+            document.getElementById('profileContent').innerHTML = `
+                <div class="hero-card fade-up">
+                    <div class="player-number">${dressNum}</div>
+                    <div class="player-name">${name}</div>
+                    <div class="player-title">${titul}</div>
+                    <div class="player-quote">"${citace}"</div>
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <div class="hero-stat-val points">${nb}</div>
+                            <div class="hero-stat-label">NB bodů</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-val gold">${vyhry} Kč</div>
+                            <div class="hero-stat-label">Výhry</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-val neon">${part}%</div>
+                            <div class="hero-stat-label">Účast</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card fade-up delay-1">
+                    <div class="section-title">⚡ Forma (posledních 5)</div>
+                    <div class="forma-row">${formaHTML}</div>
+                </div>
+
+                <div class="section-card fade-up delay-2">
+                    <div class="section-title">📊 Úspěšnost</div>
+                    <div class="stat-item">
+                        <div class="stat-header"><span>🥅 Přesná skóre</span><span class="stat-pct">${s}x &nbsp; ${scR}%</span></div>
+                        <div class="progress-bg"><div class="progress-fill fill-neon" style="width:${scR}%"></div></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-header"><span>🎯 Střelci</span><span class="stat-pct">${st}x &nbsp; ${plR}%</span></div>
+                        <div class="progress-bg"><div class="progress-fill fill-gold" style="width:${plR}%"></div></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-header"><span>📈 Trendy</span><span class="stat-pct">${tr}x &nbsp; ${trR}%</span></div>
+                        <div class="progress-bg"><div class="progress-fill fill-points" style="width:${trR}%"></div></div>
+                    </div>
+                </div>
+
+                <div class="section-card fade-up delay-3">
+                    <div class="section-title">🏅 Pozice v žebříčcích</div>
+                    <div class="rank-grid">
+                        <div class="rank-item">
+                            <div class="rank-pos ${rankClass(rankNB)}">${rankLabel(rankNB)}</div>
+                            <div class="rank-info"><div class="rank-cat">Index Naděje</div><div class="rank-val">${nb} NB</div></div>
+                        </div>
+                        <div class="rank-item">
+                            <div class="rank-pos ${rankClass(rankMoney)}">${rankLabel(rankMoney)}</div>
+                            <div class="rank-info"><div class="rank-cat">Bankovní Lupiči</div><div class="rank-val">${vyhry} Kč</div></div>
+                        </div>
+                        <div class="rank-item">
+                            <div class="rank-pos ${rankClass(rankScore)}">${rankLabel(rankScore)}</div>
+                            <div class="rank-info"><div class="rank-cat">Mistři výsledků</div><div class="rank-val">${s}x skóre</div></div>
+                        </div>
+                        <div class="rank-item">
+                            <div class="rank-pos ${rankClass(rankTrend)}">${rankLabel(rankTrend)}</div>
+                            <div class="rank-info"><div class="rank-cat">Experti trendů</div><div class="rank-val">${tr} pts</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card fade-up delay-4">
+                    <div class="section-title">📋 Historie tipů (${history.length})</div>
+                    ${historyHTML}
+                </div>
+            `;
+        });
+    }
+</script>
+</body>
+</html>
