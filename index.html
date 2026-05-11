@@ -266,7 +266,17 @@
         }
 
         .input-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.7em;
+            opacity: 0.5;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
 
         .input-field {
@@ -288,17 +298,24 @@
             box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
         }
 
+        /* NOVÝ STYL PRO SKÓRE */
         .score-row {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 25px;
-            margin: 25px 0;
+            gap: 15px;
+            margin: 10px 0 25px 0;
+        }
+
+        .score-input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .score-input {
-            width: 85px;
-            height: 75px;
+            width: 80px;
+            height: 70px;
             text-align: center;
             font-weight: 900;
             font-size: 2.2em;
@@ -308,6 +325,13 @@
             border-radius: 22px;
             outline: none;
             transition: var(--transition-fast);
+            -moz-appearance: textfield;
+        }
+
+        .score-input::-webkit-outer-spin-button,
+        .score-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .score-input:focus {
@@ -324,6 +348,11 @@
             border-radius: 20px;
             margin-bottom: 30px;
             cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .hide-tip-row:hover {
+            background: rgba(255,255,255,0.08);
         }
 
         .btn-add-ticket {
@@ -482,7 +511,6 @@
         .striker-hit { color: #3182ce; font-weight: 800; margin-left: 5px; }
         .loss-dim { color: #ff4444; opacity: 0.5; }
 
-        /* SCROLLBAR */
         #cartModal::-webkit-scrollbar { width: 6px; }
         #cartModal::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 10px; }
     </style>
@@ -501,9 +529,9 @@
             <span class="bank-total-val"><span id="uiTotalBank">0</span> Kč</span>
         </div>
         <div class="bank-total-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(0, 242, 255, 0.2);">
-    <span class="bank-total-label">Index Naděje (Peníze):</span>
-    <span class="bank-total-val" style="color: #f1c40f;"><span id="uiHopeIndex">0</span> Kč</span>
-</div>
+            <span class="bank-total-label">Index Naděje (Peníze):</span>
+            <span class="bank-total-val" style="color: #f1c40f;"><span id="uiHopeIndex">0</span> Kč</span>
+        </div>
     </div>
 
     <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
@@ -576,16 +604,12 @@
     let localCart = {};
     let activeDeadlines = {};
 
-    // --- BOD C: Úprava logiky banků v index.html ---
-
-// --- OPRAVENÝ BLOK: LOGIKA BANKŮ + VYKRESLOVÁNÍ ZÁPASŮ ---
     db.ref('sazkyData').on('value', snap => {
         const data = snap.val() || {};
         const zapasy = data.zapasy || [];
         const prevBank = data.prevedenyBank || 0;
         const container = document.getElementById('matchList');
         
-        // 1. VÝPOČET BANKŮ
         let vkladyDnes = 0;
         let sumActive = 0;
         let totalBetsCount = 0;
@@ -606,8 +630,7 @@
         document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
         document.getElementById('uiHopeIndex').innerText = totalBetsCount * 5;
 
-        // 2. VYKRESLOVÁNÍ ZÁPASŮ
-        container.innerHTML = ""; // Vyčistit seznam před novým vykreslením
+        container.innerHTML = ""; 
         
         zapasy.forEach(m => {
             activeDeadlines[m.id] = m.deadline;
@@ -651,10 +674,28 @@
                 <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">
                     ${isEvaluated && m.strelciZapasu ? `<div style="font-size:0.8em; opacity:0.6; margin-bottom:15px; text-align:center;">Střelci zápasu: ${m.strelciZapasu.join(', ')}</div>` : ''}
                     ${(!isClosed && !isEvaluated) ? `
-                        <div class="input-group"><input type="text" id="name-${m.id}" class="input-field" placeholder="Zadej své jméno"></div>
-                        <div class="score-row"><input type="number" id="scD-${m.id}" class="score-input" placeholder="0"><span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span><input type="number" id="scH-${m.id}" class="score-input" placeholder="0"></div>
-                        <div class="input-group"><input type="text" id="striker-${m.id}" class="input-field" placeholder="Kdo dá gól? (příjmení)"></div>
-                        <div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()"><input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;"><span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span></div>
+                        <div class="input-group">
+                            <label class="input-label">Tvé jméno</label>
+                            <input type="text" id="name-${m.id}" class="input-field" placeholder="Kdo sází?">
+                        </div>
+                        <label class="input-label" style="text-align:center;">Přesný výsledek</label>
+                        <div class="score-row">
+                            <div class="score-input-container">
+                                <input type="number" id="scD-${m.id}" class="score-input" placeholder="0" min="0">
+                            </div>
+                            <span style="font-size:2.5em; font-weight:900; color:var(--neon); margin-top:-5px;">:</span>
+                            <div class="score-input-container">
+                                <input type="number" id="scH-${m.id}" class="score-input" placeholder="0" min="0">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Střelec gólu</label>
+                            <input type="text" id="striker-${m.id}" class="input-field" placeholder="Příjmení střelce">
+                        </div>
+                        <div class="hide-tip-row" onclick="document.getElementById('hide-${m.id}').click()">
+                            <input type="checkbox" id="hide-${m.id}" style="width:22px; height:22px; cursor:pointer;">
+                            <span style="font-size:0.95em; font-weight:600; opacity:0.9">Skrýt můj tip před ostatními</span>
+                        </div>
                         <button class="btn-add-ticket" onclick="actionAddToTicket('${m.id}', '${m.domaci} vs ${m.hoste}')">PŘIDAT NA TIKET (25 Kč)</button>
                     ` : `<div style="text-align:center; color:var(--neon); font-weight:900; letter-spacing:1px; margin-bottom:20px;">SÁZKY UZAVŘENY</div>`}
                     <div id="bets-list-${m.id}" style="margin-top:30px;"></div>
@@ -692,10 +733,11 @@
         });
     });
 
-    function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+    function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); if(!el) return; document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
     function uiUpdateFAB() { const count = Object.keys(localCart).length; const fab = document.getElementById('fabCart'); const badge = document.getElementById('fabBadge'); if(count > 0) { fab.style.display = 'flex'; badge.innerText = count; } else { fab.style.display = 'none'; } }
     function uiOpenCart() { const list = document.getElementById('cartItemsContainer'); list.innerHTML = ""; let sum = 0; Object.entries(localCart).forEach(([id, data]) => { sum += 25; list.innerHTML += `<div class="cart-item"><div><div style="font-size:0.7em; opacity:0.5; font-weight:800;">${data.matchName}</div><div style="font-weight:900; font-size:1.1em;">${data.jmeno} | <span style="color:var(--neon)">${data.skore}</span></div></div><div style="color:#ff4444; font-size:1.8em; font-weight:900; cursor:pointer; padding-left:15px;" onclick="actionRemoveFromCart('${id}')">×</div></div>`; }); document.getElementById('uiCartTotal').innerText = `${sum} Kč`; document.getElementById('cartViewPre').style.display = 'block'; document.getElementById('cartViewPost').style.display = 'none'; document.getElementById('cartModal').style.display = 'block'; }
     function uiCloseCart() { document.getElementById('cartModal').style.display = 'none'; }
+    
     function actionAddToTicket(id, mName) { 
         const name = document.getElementById(`name-${id}`).value, 
               sD = document.getElementById(`scD-${id}`).value, 
@@ -709,10 +751,9 @@
             const data = snap.val() || {}; 
             const isDup = Object.values(data).some(s => s.skore === `${sD}:${sH}` && s.strelec.toLowerCase().trim() === striker.toLowerCase().trim()); 
             
-            // MÍSTO ZÁKAZU DÁVÁME VAROVÁNÍ S MOŽNOSTÍ VOLBY
             if(isDup) {
                 const potvrdit = confirm("POZOR: Tento přesný tip (skóre i střelec) už v systému existuje. Pokud vyhraješ, budeš se o bank dělit. Chceš přesto vsadit?");
-                if(!potvrdit) return; // Pokud klikne na Zrušit, nic se nestane a může sázku upravit
+                if(!potvrdit) return;
             }
 
             localCart[id] = { jmeno: name, skore: `${sD}:${sH}`, strelec: striker, skryt: isHidden, matchName: mName }; 
@@ -720,6 +761,7 @@
             uiToggleMatch(id); 
         }); 
     }
+
     function actionRemoveFromCart(id) { delete localCart[id]; uiUpdateFAB(); if(Object.keys(localCart).length === 0) uiCloseCart(); else uiOpenCart(); }
     
     function actionSendTicket() { 
@@ -731,13 +773,11 @@
         const totalSum = Object.keys(localCart).length * 25;
         const msg = `Sazka_${lastUser}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
         
-        // QR kód
         document.getElementById('uiQrImage').src = `https://api.paylibo.com/paylibo/generator/czech/image?accountNumber=295511827&bankCode=0300&amount=${totalSum}&currency=CZK&message=${msg}`; 
         
-        // --- PLATEBNÍ TLAČÍTKO ---
         const paylink = `spayid://1.1?acc=295511827*0300&am=${totalSum}&cc=CZK&msg=${msg}`;
         const placeholder = document.getElementById('payBtnPlaceholder');
-        placeholder.innerHTML = ""; // vyčistit
+        placeholder.innerHTML = ""; 
         
         const btn = document.createElement('a');
         btn.href = paylink;
@@ -753,7 +793,22 @@
         uiUpdateFAB(); 
     }
     
-    setInterval(() => { const now = Date.now(); Object.entries(activeDeadlines).forEach(([id, dl]) => { const el = document.getElementById(`timer-${id}`); if(!el) return; const target = new Date(dl).getTime(), diff = target - now; if(diff <= 0) { el.innerText = "🔐 UZAVŘENO"; el.style.color = "#ff4444"; el.style.borderColor = "#ff4444"; } else { const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000); el.innerText = `⏱️ ${h}h ${m}m ${s}s`; } }); }, 1000);
+    setInterval(() => { 
+        const now = Date.now(); 
+        Object.entries(activeDeadlines).forEach(([id, dl]) => { 
+            const el = document.getElementById(`timer-${id}`); 
+            if(!el) return; 
+            const target = new Date(dl).getTime(), diff = target - now; 
+            if(diff <= 0) { 
+                el.innerText = "🔐 UZAVŘENO"; 
+                el.style.color = "#ff4444"; 
+                el.style.borderColor = "#ff4444"; 
+            } else { 
+                const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000); 
+                el.innerText = `⏱️ ${h}h ${m}m ${s}s`; 
+            } 
+        }); 
+    }, 1000);
 </script>
 </body>
 </html>
