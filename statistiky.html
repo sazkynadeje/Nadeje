@@ -111,7 +111,12 @@
     <div style="font-size: 2.2em; font-weight: 900; color: #fff;">
         <span id="globalHopeMoney">0</span> Kč
     </div>
-    <div style="font-size: 0.8em; opacity: 0.6;">(Kumulováno 5 Kč z každé podané sázky)</div>
+    <div style="font-size: 0.8em; opacity: 0.6; margin-bottom: 12px;">(Kumulováno 5 Kč z každé podané sázky)</div>
+    <div style="display:flex; justify-content:center; gap:20px; font-size:0.82em; opacity:0.8;">
+        <span>🥇 <b id="fond-1-stat">0</b> Kč</span>
+        <span>🥈 <b id="fond-2-stat">0</b> Kč</span>
+        <span>🥉 <b id="fond-3-stat">0</b> Kč</span>
+    </div>
 </div>
         
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
@@ -148,7 +153,11 @@
         });
 
         db.ref('sazkyData/fondNadeje').on('value', snap => {
-            document.getElementById('globalHopeMoney').innerText = snap.val() || 0;
+            const fond = snap.val() || 0;
+            document.getElementById('globalHopeMoney').innerText = fond;
+            document.getElementById('fond-1-stat').innerText = Math.floor(fond * 0.5);
+            document.getElementById('fond-2-stat').innerText = Math.floor(fond * 0.3);
+            document.getElementById('fond-3-stat').innerText = Math.floor(fond * 0.1);
         });
 
         function renderTable(elementId, data, property, unit, isMain) {
