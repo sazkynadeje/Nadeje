@@ -606,7 +606,7 @@
 
     db.ref('sazkyData').on('value', snap => {
         const data = snap.val() || {};
-        const zapasy = data.zapasy || [];
+        const zapasy = data.zapasy ? Object.values(data.zapasy) : [];
         const prevBank = data.prevedenyBank || 0;
         const container = document.getElementById('matchList');
         
