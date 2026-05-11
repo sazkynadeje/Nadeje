@@ -824,7 +824,9 @@
 
                 // Připočítat fond naděje za všechny testovací sázky (4 + 3 = 7 sázek)
                 const celkemSazek = sazky1.length + sazky2.length;
-                db.ref('sazkyData/fondNadeje').transaction(curr => (curr || 0) + (celkemSazek * 5));
+                db.ref('sazkyData/fondNadeje').once('value', snap => {
+                    db.ref('sazkyData/fondNadeje').set((snap.val() || 0) + (celkemSazek * 5));
+                });
 
                 // Testovací uživatelé
                 db.ref('sazkyData/uzivatele/Petr').set({ heslo: btoa('1234') });
@@ -849,7 +851,9 @@
         if(!confirm(`Smazat ${ids.length} testovací zápas(y)?`)) return;
         ids.forEach(id => db.ref(`sazkyData/zapasy/${id}`).remove());
         // Odečíst fond naděje za testovací sázky (7 sázek × 5 Kč)
-        db.ref('sazkyData/fondNadeje').transaction(curr => Math.max(0, (curr || 0) - 35));
+        db.ref('sazkyData/fondNadeje').once('value', snap => {
+            db.ref('sazkyData/fondNadeje').set(Math.max(0, (snap.val() || 0) - 35));
+        });
         localStorage.removeItem('testMatchIds');
         const msg = document.getElementById('statusMsg');
         msg.innerText = "TESTOVACÍ DATA SMAZÁNA! 🗑️";
