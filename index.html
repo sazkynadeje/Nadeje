@@ -661,7 +661,7 @@
             <span class="bank-total-val"><span id="uiTotalBank">0</span> Kč</span>
         </div>
         <div class="bank-total-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(0, 242, 255, 0.2);">
-            <span class="bank-total-label">Index Naděje (Peníze):</span>
+            <span class="bank-total-label">Fond Naděje (Kumulováno):</span>
             <span class="bank-total-val" style="color: #f1c40f;"><span id="uiHopeIndex">0</span> Kč</span>
         </div>
     </div>
@@ -834,7 +834,6 @@
 
         document.getElementById('uiMainBank').innerText = prevBank + vkladyDnes;
         document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
-        document.getElementById('uiHopeIndex').innerText = totalBetsCount * 5;
 
         container.innerHTML = ""; 
         
@@ -943,6 +942,10 @@
     db.ref('sazkyData').on('value', snap => {
         lastSnap = snap.val() || {};
         renderMatches(lastSnap);
+    });
+
+    db.ref('sazkyData/fondNadeje').on('value', snap => {
+        document.getElementById('uiHopeIndex').innerText = snap.val() || 0;
     });
 
     function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); if(!el) return; document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
