@@ -784,6 +784,7 @@
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('userBadge').style.display = 'flex';
         document.getElementById('userBadgeName').innerText = name;
+        if (lastSnap) renderMatches(lastSnap);
     }
 
     function doLogout() {
@@ -798,12 +799,11 @@
         loginSuccess(currentUser);
     }
 
-
     let localCart = {};
     let activeDeadlines = {};
+    let lastSnap = null; // uložíme poslední data pro překreslení po přihlášení
 
-    db.ref('sazkyData').on('value', snap => {
-        const data = snap.val() || {};
+    function renderMatches(data) {
         const zapasy = data.zapasy ? Object.entries(data.zapasy).map(([key, val]) => ({ ...val, id: key })) : [];
         const prevBank = data.prevedenyBank || 0;
         const container = document.getElementById('matchList');
@@ -872,10 +872,11 @@
                 <div id="detail-${m.id}" class="details" onclick="event.stopPropagation()">
                     ${isEvaluated && m.strelciZapasu ? `<div style="font-size:0.8em; opacity:0.6; margin-bottom:15px; text-align:center;">Střelci zápasu: ${m.strelciZapasu.join(', ')}</div>` : ''}
                     ${(!isClosed && !isEvaluated) ? `
+                        ${currentUser ? `<input type="hidden" id="name-${m.id}" value="${currentUser}">` : `
                         <div class="input-group">
                             <label class="input-label">Tvé jméno</label>
-                            <input type="text" id="name-${m.id}" class="input-field" placeholder="Kdo sází?" value="${currentUser || ''}">
-                        </div>
+                            <input type="text" id="name-${m.id}" class="input-field" placeholder="Kdo sází?">
+                        </div>`}
                         <label class="input-label" style="text-align:center;">Přesný výsledek</label>
                         <div class="score-row">
                             <div class="score-input-container">
@@ -929,6 +930,11 @@
                 });
             }
         });
+    } // konec renderMatches
+
+    db.ref('sazkyData').on('value', snap => {
+        lastSnap = snap.val() || {};
+        renderMatches(lastSnap);
     });
 
     function uiToggleMatch(id) { const el = document.getElementById(`detail-${id}`); if(!el) return; document.querySelectorAll('.details').forEach(d => { if(d.id !== `detail-${id}`) d.style.display = 'none'; }); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
