@@ -404,11 +404,7 @@
             db.ref('sazkyData/zapasy').once('value'),
             db.ref('sazkyData/stats').once('value')
         ]).then(([statSnap, zapasySnap, allStatsSnap]) => {
-            const data = statSnap.val();
-            if (!data) {
-                document.getElementById('profileContent').innerHTML = '<div class="loading">❌ Hráč nenalezen v databázi.</div>';
-                return;
-            }
+            const data = statSnap.val() || { vyhry: 0, trefeneSkore: 0, trefeniStrelci: 0, trefenyTrend: 0, celkoveBody: 0, pocetTipu: 0 };
 
             const allStats = allStatsSnap.val() || {};
             const zapasyData = zapasySnap.val() || {};
