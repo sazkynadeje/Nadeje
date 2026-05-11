@@ -102,10 +102,6 @@
     <a href="index.html"><img src="IMG_8429.png" alt="Logo" class="header-logo"></a>
     
     <div class="stats-container">
-        <div class="stat-card points-card">
-            <h2 class="points-title" style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
-            <div id="leaderboard-total">Načítám...</div>
-        </div>
        <div class="stat-card" style="border-color: #f1c40f; background: rgba(241, 196, 15, 0.05);">
     <h2 style="color: #f1c40f;">💎 FOND NADĚJE</h2>
     <div style="font-size: 2.2em; font-weight: 900; color: #fff;">
@@ -118,6 +114,10 @@
         <span>🥉 <b id="fond-3-stat">0</b> Kč</span>
     </div>
 </div>
+        <div class="stat-card points-card">
+            <h2 class="points-title" style="color:var(--points)">⭐ INDEX NADĚJE (CELKEM)</h2>
+            <div id="leaderboard-total">Načítám...</div>
+        </div>
         
         <div class="stat-card"><h2>💰 BANKOVNÍ LUPIČI</h2><div id="leaderboard-money"></div></div>
         <div class="stat-card"><h2>🧠 EXPERTI (TRENDY)</h2><div id="leaderboard-trend"></div></div>
@@ -157,7 +157,7 @@
             document.getElementById('globalHopeMoney').innerText = fond;
             document.getElementById('fond-1-stat').innerText = Math.floor(fond * 0.5);
             document.getElementById('fond-2-stat').innerText = Math.floor(fond * 0.3);
-            document.getElementById('fond-3-stat').innerText = Math.floor(fond * 0.1);
+            document.getElementById('fond-3-stat').innerText = Math.floor(fond * 0.2);
         });
 
         function renderTable(elementId, data, property, unit, isMain) {
