@@ -145,6 +145,11 @@
             renderTable('leaderboard-trend', stats, 'trefenyTrend', ' pts', false);
             renderTable('leaderboard-score', stats, 'trefeneSkore', 'x', false);
             renderTable('leaderboard-players', stats, 'trefeniStrelci', 'x', false);
+            let celkemSazekHistoricky = 0;
+Object.values(stats).forEach(player => {
+    celkemSazekHistoricky += (parseInt(player.pocetTipu) || 0);
+});
+document.getElementById('globalHopeMoney').innerText = celkemSazekHistoricky * 5;
         });
 
         function renderTable(elementId, data, property, unit, isMain) {
