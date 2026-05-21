@@ -846,12 +846,16 @@
         document.getElementById('uiTotalBank').innerText = prevBank + sumActive;
 
         container.innerHTML = ""; 
-        
-        zapasy.forEach(m => {
+
+        const aktivni = zapasy.filter(m => m.status !== 'vyhodnoceno');
+        const vyhodnocene = zapasy.filter(m => m.status === 'vyhodnoceno');
+
+        function renderMatch(m, target) {
+            target = target || container;
             activeDeadlines[m.id] = m.deadline;
             const now = Date.now();
-            const target = new Date(m.deadline).getTime();
-            const isClosed = now > target;
+            const target2 = new Date(m.deadline).getTime();
+            const isClosed = now > target2;
             const isEvaluated = m.status === "vyhodnoceno";
 
             let t1=0, t0=0, t2=0, tot=0;
@@ -917,7 +921,7 @@
                     <div id="bets-list-${m.id}" style="margin-top:30px;"></div>
                 </div>`;
             
-            container.appendChild(card);
+            target.appendChild(card);
 
             if (m.sazky) {
                 const bList = document.getElementById(`bets-list-${m.id}`);
@@ -946,8 +950,32 @@
                     bList.innerHTML += `<div class="bet-row-ui"><div class="bet-header-ui"><span>${icon} ${s.jmeno}</span><span style="color:var(--neon)">${displaySkore}</span></div><div class="bet-meta-ui">🎯 Střelec: ${displayStrelec} ${strikerHitLabel}</div></div>`;
                 });
             }
-        });
-    } // konec renderMatches
+        } // konec renderMatch
+
+        // Vykresli aktivní zápasy
+        aktivni.forEach(m => renderMatch(m));
+
+        // Tlačítko pro historii
+        if (vyhodnocene.length > 0) {
+            const histBtn = document.createElement('button');
+            histBtn.id = 'historyToggleBtn';
+            histBtn.innerText = `📜 ZOBRAZIT HISTORII (${vyhodnocene.length})`;
+            histBtn.style.cssText = `width:100%; padding:16px; margin:10px 0; background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); color:rgba(255,255,255,0.5); border-radius:20px; font-size:0.85em; font-weight:800; letter-spacing:1px; cursor:pointer;`;
+            container.appendChild(histBtn);
+
+            const histContainer = document.createElement('div');
+            histContainer.id = 'historyContainer';
+            histContainer.style.display = 'none';
+            container.appendChild(histContainer);
+
+            vyhodnocene.forEach(m => renderMatch(m, histContainer));
+
+            histBtn.onclick = () => {
+                const open = histContainer.style.display !== 'none';
+                histContainer.style.display = open ? 'none' : 'block';
+                histBtn.innerText = open ? `📜 ZOBRAZIT HISTORII (${vyhodnocene.length})` : `🔼 SKRÝT HISTORII`;
+            };
+        }
 
     db.ref('sazkyData').on('value', snap => {
         lastSnap = snap.val() || {};
