@@ -818,6 +818,11 @@
 
     function renderMatches(data) {
         const zapasy = data.zapasy ? Object.entries(data.zapasy).map(([key, val]) => ({ ...val, id: key })) : [];
+        zapasy.sort((a, b) => {
+            if (a.status === 'vyhodnoceno' && b.status !== 'vyhodnoceno') return 1;
+            if (a.status !== 'vyhodnoceno' && b.status === 'vyhodnoceno') return -1;
+            return 0;
+        });
         const prevBank = data.prevedenyBank || 0;
         const container = document.getElementById('matchList');
         
